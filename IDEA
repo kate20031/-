@@ -1,0 +1,49 @@
+MOD = 0x10001
+MASK = 0xFFFF
+
+
+def mul(a, b):
+    # множення по модулю 65537
+    if a == 0:
+        a = 0x10000
+    if b == 0:
+        b = 0x10000
+
+    res = (a * b) % MOD
+
+    if res == 0x10000:
+        return 0
+
+    return res & MASK
+
+
+def add(a, b):
+    # додавання по модулю 2^16
+    return (a + b) & MASK
+
+
+def add_inv(x):
+    # обернене для додавання
+    return (-x) & MASK
+
+
+def mul_inv(x):
+    # обернене для множення (алгоритм Евкліда)
+    if x == 0:
+        x = 0x10000
+
+    t0, t1 = 0, 1
+    r0, r1 = MOD, x
+
+    while r1 != 0:
+        q = r0 // r1
+        r0, r1 = r1, r0 - q * r1
+        t0, t1 = t1, t0 - q * t1
+
+    if t0 < 0:
+        t0 += MOD
+
+    if t0 == 0x10000:
+        return 0
+
+    return t0 & MASK
