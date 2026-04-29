@@ -93,3 +93,73 @@ def generate_decrypt_subkeys(enc_keys):
         j += 6
 
     return dec
+
+def idea_round(x1, x2, x3, x4, keys):
+    k1, k2, k3, k4, k5, k6 = keys
+
+    x1 = mul(x1, k1)
+    x2 = add(x2, k2)
+    x3 = add(x3, k3)
+    x4 = mul(x4, k4)
+
+    t0 = x1 ^ x3
+    t1 = x2 ^ x4
+
+    t0 = mul(t0, k5)
+    t1 = add(t1, t0)
+    t1 = mul(t1, k6)
+    t0 = add(t0, t1)
+
+    y1 = x1 ^ t1
+    y4 = x4 ^ t0
+    y2 = x3 ^ t1
+    y3 = x2 ^ t0
+
+    return y1, y2, y3, y4
+
+
+def idea_crypt_block(block, subkeys):
+    x1 = (block >> 48) & 0xFFFF
+    x2 = (block >> 32) & 0xFFFF
+    x3 = (block >> 16) & 0xFFFF
+    x4 = block & 0xFFFF
+
+    pos = 0
+
+    for _ in range(8):
+        x1, x2, x3, x4 = idea_round(
+            x1, x2, x3, x4,
+            subkeys[pos:pos + 6]
+        )
+        pos += 6
+
+    y1 = mul(x1, subkeys[48])
+    y2 = add(x3, subkeys[49])
+    y3 = add(x2, subkeys[50])
+    y4 = mul(x4, subkeys[51])
+
+    return (y1 << 48) | (y2 << 32) | (y3 << 16) | y4
+
+
+def encrypt_block(block, key):
+    enc_keys = generate_encrypt_subkeys(key)
+    return idea_crypt_block(block, enc_keys)
+
+
+def decrypt_block(block, key):
+    enc_keys = generate_encrypt_subkeys(key)
+    dec_keys = generate_decrypt_subkeys(enc_keys)
+    return idea_crypt_block(block, dec_keys)
+
+
+# тест (щоб показати, що працює)
+if __name__ == "__main__":
+    key = 0x00010002000300040005000600070008
+    plaintext = 0x0000000100020003
+
+    ciphertext = encrypt_block(plaintext, key)
+    decrypted = decrypt_block(ciphertext, key)
+
+    print("Plaintext :", hex(plaintext))
+    print("Ciphertext:", hex(ciphertext))
+    print("Decrypted :", hex(decrypted))
