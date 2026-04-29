@@ -67,30 +67,35 @@ def generate_encrypt_subkeys(key):
 
 def generate_decrypt_subkeys(enc_keys):
     # генеруємо ключі для дешифрування
-    dec = [0] * 52
+    dec = []
 
-    dec[0] = mul_inv(enc_keys[48])
-    dec[1] = add_inv(enc_keys[49])
-    dec[2] = add_inv(enc_keys[50])
-    dec[3] = mul_inv(enc_keys[51])
-    dec[4] = enc_keys[46]
-    dec[5] = enc_keys[47]
+    dec += [
+        mul_inv(enc_keys[48]),
+        add_inv(enc_keys[49]),
+        add_inv(enc_keys[50]),
+        mul_inv(enc_keys[51]),
+        enc_keys[46],
+        enc_keys[47]
+    ]
 
-    j = 6
+    for i in range(7):
+        j = 42 - 6 * i
 
-    for i in range(42, -1, -6):
-        dec[j] = mul_inv(enc_keys[i])
-        dec[j + 1] = add_inv(enc_keys[i + 2])
-        dec[j + 2] = add_inv(enc_keys[i + 1])
-        dec[j + 3] = mul_inv(enc_keys[i + 3])
+        dec += [
+            mul_inv(enc_keys[j]),
+            add_inv(enc_keys[j + 2]),
+            add_inv(enc_keys[j + 1]),
+            mul_inv(enc_keys[j + 3]),
+            enc_keys[j - 2],
+            enc_keys[j - 1]
+        ]
 
-        if i == 0:
-            break
-
-        dec[j + 4] = enc_keys[i - 2]
-        dec[j + 5] = enc_keys[i - 1]
-
-        j += 6
+    dec += [
+        mul_inv(enc_keys[0]),
+        add_inv(enc_keys[1]),
+        add_inv(enc_keys[2]),
+        mul_inv(enc_keys[3])
+    ]
 
     return dec
 
@@ -163,3 +168,8 @@ if __name__ == "__main__":
     print("Plaintext :", hex(plaintext))
     print("Ciphertext:", hex(ciphertext))
     print("Decrypted :", hex(decrypted))
+    
+    if decrypted == plaintext:
+        print("OK: шифрування і дешифрування працюють")
+    else:
+        print("ERROR: результат не співпадає")
