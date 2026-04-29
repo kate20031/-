@@ -47,3 +47,49 @@ def mul_inv(x):
         return 0
 
     return t0 & MASK
+
+
+def generate_encrypt_subkeys(key):
+    # 52 підключі по 16 біт
+    subkeys = []
+
+    for i in range(52):
+
+        # кожні 8 — циклічний зсув
+        if i != 0 and i % 8 == 0:
+            key = ((key << 25) | (key >> (128 - 25))) & ((1 << 128) - 1)
+
+        shift = 128 - 16 * ((i % 8) + 1)
+        subkeys.append((key >> shift) & 0xFFFF)
+
+    return subkeys
+
+
+def generate_decrypt_subkeys(enc_keys):
+    # генеруємо ключі для дешифрування
+    dec = [0] * 52
+
+    dec[0] = mul_inv(enc_keys[48])
+    dec[1] = add_inv(enc_keys[49])
+    dec[2] = add_inv(enc_keys[50])
+    dec[3] = mul_inv(enc_keys[51])
+    dec[4] = enc_keys[46]
+    dec[5] = enc_keys[47]
+
+    j = 6
+
+    for i in range(42, -1, -6):
+        dec[j] = mul_inv(enc_keys[i])
+        dec[j + 1] = add_inv(enc_keys[i + 2])
+        dec[j + 2] = add_inv(enc_keys[i + 1])
+        dec[j + 3] = mul_inv(enc_keys[i + 3])
+
+        if i == 0:
+            break
+
+        dec[j + 4] = enc_keys[i - 2]
+        dec[j + 5] = enc_keys[i - 1]
+
+        j += 6
+
+    return dec
